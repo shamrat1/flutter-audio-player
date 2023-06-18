@@ -8,9 +8,9 @@ void main() {
 
 List<AudioFile> audios = [
   AudioFile(
-    name: "Audio File 1",
+    name: "Nobel Prize Ceremony 2018",
     url: "https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3",
-    artist: "Amazon AWS",
+    artist: "Nobel Prize Authority",
   ),
   AudioFile(
     name: "Kalimba",

@@ -102,9 +102,24 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     Text(
-                      (playerData?.sequence?.currentIndex ?? 0).toString(),
+                      "FIles order " +
+                          (playerData?.sequence?.shuffleIndices).toString(),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
+                    Text(
+                      "Index of ${(playerData?.currentIndex ?? 0)} in shuffleindices " +
+                          (playerData?.sequence?.shuffleIndices
+                                  .indexOf(playerData.currentIndex ?? 0))
+                              .toString(),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    Text(
+                      "Shuffle indices length " +
+                          ((playerData?.sequence?.shuffleIndices.length ?? 1))
+                              .toString(),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+
                     // Display play/pause button and volume/speed sliders.
                     ControlButtons(player),
                     // Display seek bar. Using StreamBuilder, this widget rebuilds
