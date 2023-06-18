@@ -1,6 +1,5 @@
-# audio_test
-
-A new Flutter project.
+# flutter-audio-player
+Flutter Audio Player with playlist and streams
 
 ## Getting Started
 
