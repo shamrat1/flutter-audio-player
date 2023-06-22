@@ -3,11 +3,12 @@ import 'package:audio_test/seekbar.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 import 'package:rxdart/rxdart.dart';
 
 class SingleAudioScreen extends StatefulWidget {
   SingleAudioScreen({Key? key, required this.audioUrls}) : super(key: key);
-  final List<AudioFile> audioUrls;
+  final List<SongModel> audioUrls;
 
   @override
   State<SingleAudioScreen> createState() => _SingleAudioScreenState();
@@ -32,9 +33,8 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
     // Try to load audio from a source and catch any errors.
     try {
       final playlist = ConcatenatingAudioSource(
-          children: widget.audioUrls
-              .map((e) => AudioSource.uri(Uri.parse(e.url)))
-              .toList());
+          children:
+              widget.audioUrls.map((e) => AudioSource.file(e.data)).toList());
       await player.setAudioSource(playlist, initialIndex: 0);
       await player.setShuffleModeEnabled(true);
       await player.play();
@@ -67,80 +67,77 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(actions: [
-          IconButton(
-              onPressed: () => Navigator.pop(context), icon: Icon(Icons.close))
-        ]),
-        body: SafeArea(
-          child: StreamBuilder<AudioPlayerStreams>(
-              stream: _playerStream,
-              builder: (context, playerSnapshot) {
-                // player.sequenceStateStream
+    return Scaffold(
+      appBar: AppBar(
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.keyboard_arrow_down),
+          ),
+          actions: [
+            IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close))
+          ]),
+      body: SafeArea(
+        child: StreamBuilder<AudioPlayerStreams>(
+            stream: _playerStream,
+            builder: (context, playerSnapshot) {
+              // player.sequenceStateStream
 
-                var playerData = playerSnapshot.data;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(
-                        (playerData?.currentIndex ?? 0).toString(),
-                        style: Theme.of(context).textTheme.headline1,
+              var playerData = playerSnapshot.data;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Hero(
+                    tag: widget.audioUrls[playerData?.currentIndex ?? 0].data,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      width: double.infinity,
+                      height: MediaQuery.sizeOf(context).height * 0.35,
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 16),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.music_note_rounded,
+                        size: 250,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
+                  ),
 
-                    Text(
-                      widget.audioUrls[playerData?.currentIndex ?? 0].name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    Text(
-                      widget.audioUrls[playerData?.currentIndex ?? 0].artist,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    Text(
-                      "FIles order " +
-                          (playerData?.sequence?.shuffleIndices).toString(),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    Text(
-                      "Index of ${(playerData?.currentIndex ?? 0)} in shuffleindices " +
-                          (playerData?.sequence?.shuffleIndices
-                                  .indexOf(playerData.currentIndex ?? 0))
-                              .toString(),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    Text(
-                      "Shuffle indices length " +
-                          ((playerData?.sequence?.shuffleIndices.length ?? 1))
-                              .toString(),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                  Text(
+                    widget.audioUrls[playerData?.currentIndex ?? 0].title,
+                    style: Theme.of(context).textTheme.headlineLarge,
+                  ),
+                  Text(
+                    widget.audioUrls[playerData?.currentIndex ?? 0].artist ??
+                        "N/A",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
 
-                    // Display play/pause button and volume/speed sliders.
-                    ControlButtons(player),
-                    // Display seek bar. Using StreamBuilder, this widget rebuilds
-                    // each time the position, buffered position or duration changes.
-                    StreamBuilder<PositionData>(
-                      stream: _positionDataStream,
-                      builder: (context, snapshot) {
-                        final positionData = snapshot.data;
-                        return SeekBar(
-                          duration: positionData?.duration ?? Duration.zero,
-                          position: positionData?.position ?? Duration.zero,
-                          bufferedPosition:
-                              positionData?.bufferedPosition ?? Duration.zero,
-                          onChangeEnd: player.seek,
-                        );
-                      },
-                    ),
-                  ],
-                );
-              }),
-        ),
+                  // Display play/pause button and volume/speed sliders.
+                  ControlButtons(player),
+                  StreamBuilder<PositionData>(
+                    stream: _positionDataStream,
+                    builder: (context, snapshot) {
+                      final positionData = snapshot.data;
+                      return SeekBar(
+                        duration: positionData?.duration ?? Duration.zero,
+                        position: positionData?.position ?? Duration.zero,
+                        bufferedPosition:
+                            positionData?.bufferedPosition ?? Duration.zero,
+                        onChangeEnd: player.seek,
+                      );
+                    },
+                  ),
+                ],
+              );
+            }),
       ),
     );
   }
@@ -157,33 +154,30 @@ class ControlButtons extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        StreamBuilder<bool>(
+          stream: player.shuffleModeEnabledStream,
+          builder: (context, snapshot) {
+            return IconButton(
+              onPressed: () {
+                if ((snapshot.data ?? false)) {
+                  player.setShuffleModeEnabled(false);
+                } else {
+                  player.setShuffleModeEnabled(true);
+                }
+              },
+              icon: Icon((snapshot.data ?? false)
+                  ? Icons.shuffle_on_rounded
+                  : Icons.shuffle_rounded),
+            );
+          },
+        ),
         IconButton(
           onPressed: () {
             player.seekToPrevious();
           },
           icon: const Icon(Icons.skip_previous),
         ),
-        // Opens volume slider dialog
-        IconButton(
-          icon: const Icon(Icons.volume_up),
-          onPressed: () {
-            showSliderDialog(
-              context: context,
-              title: "Adjust volume",
-              divisions: 10,
-              min: 0.0,
-              max: 1.0,
-              value: player.volume,
-              stream: player.volumeStream,
-              onChanged: player.setVolume,
-            );
-          },
-        ),
 
-        /// This StreamBuilder rebuilds whenever the player state changes, which
-        /// includes the playing/paused state and also the
-        /// loading/buffering/ready state. Depending on the state we show the
-        /// appropriate button or loading indicator.
         StreamBuilder<PlayerState>(
           stream: player.playerStateStream,
           builder: (context, snapshot) {
@@ -200,53 +194,107 @@ class ControlButtons extends StatelessWidget {
               );
             } else if (playing != true) {
               return IconButton(
-                icon: const Icon(Icons.play_arrow),
-                iconSize: 64.0,
+                icon: const Icon(Icons.play_arrow_rounded),
+                iconSize: 80.0,
                 onPressed: player.play,
               );
             } else if (processingState != ProcessingState.completed) {
               return IconButton(
-                icon: const Icon(Icons.pause),
-                iconSize: 64.0,
+                icon: const Icon(Icons.pause_rounded),
+                iconSize: 80.0,
                 onPressed: player.pause,
               );
             } else {
               return IconButton(
-                icon: const Icon(Icons.replay),
-                iconSize: 64.0,
+                icon: const Icon(Icons.replay_rounded),
+                iconSize: 80.0,
                 onPressed: () => player.seek(Duration.zero),
               );
             }
           },
         ),
-        // Opens speed slider dialog
-        StreamBuilder<double>(
-          stream: player.speedStream,
-          builder: (context, snapshot) => IconButton(
-            icon: Text("${snapshot.data?.toStringAsFixed(1)}x",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () {
-              showSliderDialog(
-                context: context,
-                title: "Adjust speed",
-                divisions: 10,
-                min: 0.5,
-                max: 1.5,
-                value: player.speed,
-                stream: player.speedStream,
-                onChanged: player.setSpeed,
-              );
-            },
-          ),
-        ),
         IconButton(
           onPressed: () {
             player.seekToNext();
           },
-          icon: Icon(
+          icon: const Icon(
             Icons.skip_next,
           ),
         ),
+        StreamBuilder<LoopMode>(
+            stream: player.loopModeStream,
+            builder: (context, snapshot) {
+              var loopMode = snapshot.data ?? LoopMode.all;
+              String child;
+              switch (loopMode) {
+                case LoopMode.all:
+                  child = "All";
+                  break;
+
+                case LoopMode.one:
+                  child = "1";
+                  break;
+                default:
+                  child = "";
+              }
+              return IconButton(
+                onPressed: () {
+                  if (loopMode == LoopMode.off) {
+                    player.setLoopMode(LoopMode.one);
+                  } else if (loopMode == LoopMode.one) {
+                    player.setLoopMode(LoopMode.all);
+                  } else if (loopMode == LoopMode.all) {
+                    player.setLoopMode(LoopMode.off);
+                  }
+                },
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.loop_rounded),
+                    if (loopMode != LoopMode.off)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Text(
+                              child,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall!
+                                  .copyWith(
+                                      fontSize: 5,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary),
+                            )),
+                      )
+                  ],
+                ),
+              );
+            }),
+        // StreamBuilder<double>(
+        //   stream: player.speedStream,
+        //   builder: (context, snapshot) => IconButton(
+        //     icon: Text("${snapshot.data?.toStringAsFixed(1)}x",
+        //         style: const TextStyle(fontWeight: FontWeight.bold)),
+        //     onPressed: () {
+        //       showSliderDialog(
+        //         context: context,
+        //         title: "Adjust speed",
+        //         divisions: 10,
+        //         min: 0.5,
+        //         max: 1.5,
+        //         value: player.speed,
+        //         stream: player.speedStream,
+        //         onChanged: player.setSpeed,
+        //       );
+        //     },
+        //   ),
+        // ),
       ],
     );
   }

@@ -30,9 +30,9 @@ class SeekBarState extends State<SeekBar> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _sliderThemeData = SliderTheme.of(context).copyWith(
-      trackHeight: 2.0,
-    );
+    _sliderThemeData = Theme.of(context).sliderTheme.copyWith(
+          trackHeight: 2.0,
+        );
   }
 
   @override
@@ -42,8 +42,10 @@ class SeekBarState extends State<SeekBar> {
         SliderTheme(
           data: _sliderThemeData.copyWith(
             thumbShape: HiddenThumbComponentShape(),
-            activeTrackColor: Colors.blue.shade100,
-            inactiveTrackColor: Colors.grey.shade300,
+            activeTrackColor:
+                Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+            inactiveTrackColor:
+                Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
           ),
           child: ExcludeSemantics(
             child: Slider(

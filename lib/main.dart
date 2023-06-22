@@ -1,43 +1,15 @@
+import 'dart:io';
+
 import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/audio_screen.dart';
+import 'package:audio_test/color_schemes.dart';
 import 'package:flutter/material.dart';
+import 'package:on_audio_query/on_audio_query.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
 }
-
-List<AudioFile> audios = [
-  AudioFile(
-    name: "Nobel Prize Ceremony 2018",
-    url: "https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3",
-    artist: "Nobel Prize Authority",
-  ),
-  AudioFile(
-    name: "Kalimba",
-    url:
-        "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3",
-    artist: "Apple",
-  ),
-  AudioFile(
-    name: "Test Audio 2MB",
-    url:
-        "https://freetestdata.com/wp-content/uploads/2021/09/Free_Test_Data_2MB_MP3.mp3",
-    artist: "Test Audio",
-  ),
-  AudioFile(
-    name: "Test Audio 5MB",
-    url:
-        "https://freetestdata.com/wp-content/uploads/2021/09/Free_Test_Data_5MB_MP3.mp3",
-    artist: "Test Audio 5MB",
-  ),
-];
-List<AudioFile> audio = [
-  AudioFile(
-    name: "Audio File 1",
-    url: "https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3",
-    artist: "Amazon AWS",
-  ),
-];
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -46,11 +18,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'Simple Player',
+      theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+      darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
+      home: const MyHomePage(title: 'Simple Player'),
     );
   }
 }
@@ -65,7 +36,38 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  bool _loading = true;
+  List<SongModel> songs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    requestPermission();
+  }
+
+  Future<void> requestPermission() async {
+    if (Platform.isAndroid) {
+      var status = await Permission.storage.status;
+      if (!status.isGranted) {
+        await Permission.storage.request();
+      }
+    }
+    _getAudioQuery();
+  }
+
+  void _getAudioQuery() async {
+    if (!_loading) {
+      setState(() {
+        _loading = true;
+      });
+    }
+    List<SongModel> audios = await OnAudioQuery().querySongs();
+
+    setState(() {
+      songs = audios;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,32 +75,95 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (ctx) => SingleAudioScreen(
-                        audioUrls: audios,
-                      )));
-        },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        onPressed: _getAudioQuery,
+        child: const Icon(Icons.refresh),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: songs.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(
+                    songs[index].title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge!
+                        .copyWith(fontSize: 20),
+                  ),
+                  subtitle: Text(
+                    formatDuration((songs[index].duration ?? 0) ~/ 1000),
+                  ),
+                  leading: Hero(
+                    tag: songs[index].data,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        color: Theme.of(context).colorScheme.background,
+                        size: 35,
+                      ),
+                    ),
+                  ),
+                  trailing: PopupMenuButton(
+                    onSelected: (value) {
+                      print(value);
+                    },
+                    itemBuilder: (context) {
+                      return const [
+                        PopupMenuItem(
+                          value: 1,
+                          child: Text("Share"),
+                        ),
+                        PopupMenuItem(
+                          value: 2,
+                          child: Text("Delete"),
+                        ),
+                        PopupMenuItem(
+                          value: 3,
+                          child: Text("Delete"),
+                        ),
+                      ];
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => SingleAudioScreen(
+                          audioUrls: [songs[index]],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
+  }
+
+  String formatDuration(int seconds) {
+    int hours = seconds ~/ 3600;
+    int minutes = (seconds % 3600) ~/ 60;
+    int remainingSeconds = seconds % 60;
+
+    String hoursString = (hours < 10) ? '0$hours' : hours.toString();
+    String minutesString = (minutes < 10) ? '0$minutes' : minutes.toString();
+    String secondsString = (remainingSeconds < 10)
+        ? '0$remainingSeconds'
+        : remainingSeconds.toString();
+
+    if (hours == 0 || hours < 0) {
+      return '$minutesString:$secondsString';
+    }
+
+    return '$hoursString:$minutesString:$secondsString';
   }
 }
