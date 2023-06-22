@@ -7,9 +7,10 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:rxdart/rxdart.dart';
 
 class SingleAudioScreen extends StatefulWidget {
-  SingleAudioScreen({Key? key, required this.audioUrls}) : super(key: key);
+  SingleAudioScreen({Key? key, required this.audioUrls, this.shuffle = false})
+      : super(key: key);
   final List<SongModel> audioUrls;
-
+  final bool shuffle;
   @override
   State<SingleAudioScreen> createState() => _SingleAudioScreenState();
 }
@@ -36,7 +37,7 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
           children:
               widget.audioUrls.map((e) => AudioSource.file(e.data)).toList());
       await player.setAudioSource(playlist, initialIndex: 0);
-      await player.setShuffleModeEnabled(true);
+      await player.setShuffleModeEnabled(widget.shuffle);
       await player.play();
     } catch (e) {
       print("Error loading audio source: $e");

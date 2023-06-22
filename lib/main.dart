@@ -74,10 +74,26 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            onPressed: _getAudioQuery,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _getAudioQuery,
-        child: const Icon(Icons.refresh),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => SingleAudioScreen(
+                audioUrls: songs,
+                shuffle: true,
+              ),
+            ),
+          );
+        },
+        child: const Icon(Icons.shuffle_rounded),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
