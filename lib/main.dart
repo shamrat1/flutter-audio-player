@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/audio_screen.dart';
 import 'package:audio_test/color_schemes.dart';
+import 'package:audio_test/overlay_handler.dart';
+import 'package:audio_test/overlay_service.dart';
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,11 +20,14 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Simple Player',
-      theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
-      darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
-      home: const MyHomePage(title: 'Simple Player'),
+    return ChangeNotifierProvider<OverlayHandlerProvider>(
+      create: (_) => OverlayHandlerProvider(),
+      child: MaterialApp(
+        title: 'Simple Audio Player',
+        theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+        darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
+        home: const MyHomePage(title: 'Simple Audio Player'),
+      ),
     );
   }
 }
@@ -61,8 +67,13 @@ class _MyHomePageState extends State<MyHomePage> {
         _loading = true;
       });
     }
-    List<SongModel> audios = await OnAudioQuery().querySongs();
-
+    List<SongModel> audios = [];
+    List<SongModel> myAudios = await OnAudioQuery().querySongs();
+    for (var e in myAudios) {
+      if ((e.duration ?? 0) > 5000) {
+        audios.add(e);
+      }
+    }
     setState(() {
       songs = audios;
       _loading = false;
@@ -106,7 +117,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge!
-                        .copyWith(fontSize: 20),
+                        .copyWith(fontSize: 17),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(
                     formatDuration((songs[index].duration ?? 0) ~/ 1000),
@@ -150,14 +163,19 @@ class _MyHomePageState extends State<MyHomePage> {
                     },
                   ),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (ctx) => SingleAudioScreen(
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (ctx) => SingleAudioScreen(
+                    //       audioUrls: [songs[index]],
+                    //     ),
+                    //   ),
+                    // );
+                    OverlayService().addAudioTitleOverlay(
+                        context,
+                        SingleAudioScreen(
                           audioUrls: [songs[index]],
-                        ),
-                      ),
-                    );
+                        ));
                   },
                 );
               },
