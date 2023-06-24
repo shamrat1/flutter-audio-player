@@ -5,6 +5,7 @@ import 'package:audio_test/seekbar.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
@@ -38,8 +39,10 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
     // Try to load audio from a source and catch any errors.
     try {
       final playlist = ConcatenatingAudioSource(
-          children:
-              widget.audioUrls.map((e) => AudioSource.file(e.data)).toList());
+          children: widget.audioUrls
+              .map((e) => AudioSource.file(e.data,
+                  tag: MediaItem(id: e.data, title: e.title, artist: e.artist)))
+              .toList());
       await player.setAudioSource(playlist, initialIndex: 0);
       await player.setShuffleModeEnabled(widget.shuffle);
       await player.play();

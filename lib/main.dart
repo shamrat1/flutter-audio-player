@@ -6,11 +6,17 @@ import 'package:audio_test/color_schemes.dart';
 import 'package:audio_test/overlay_handler.dart';
 import 'package:audio_test/overlay_service.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
   runApp(const MyApp());
 }
 
