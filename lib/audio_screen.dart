@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/constants.dart';
 import 'package:audio_test/overlay_handler.dart';
@@ -43,7 +45,11 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
               .map((e) => AudioSource.file(e.data,
                   tag: MediaItem(id: e.data, title: e.title, artist: e.artist)))
               .toList());
-      await player.setAudioSource(playlist, initialIndex: 0);
+      var index = 0;
+      if (widget.shuffle) {
+        index = Random().nextInt(playlist.length);
+      }
+      await player.setAudioSource(playlist, initialIndex: index);
       await player.setShuffleModeEnabled(widget.shuffle);
       await player.play();
     } catch (e) {
