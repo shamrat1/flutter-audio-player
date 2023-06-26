@@ -59,13 +59,20 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
           (position, bufferedPosition, duration) => PositionData(
               position, bufferedPosition, duration ?? Duration.zero));
 
-  Stream<AudioPlayerStreams> get _playerStream => Rx.combineLatest4<LoopMode,
-          bool, int?, SequenceState?, AudioPlayerStreams>(
+  Stream<AudioPlayerStreams> get _playerStream => Rx.combineLatest5<LoopMode,
+          bool, int?, SequenceState?, PlayerState, AudioPlayerStreams>(
       player.loopModeStream,
       player.shuffleModeEnabledStream,
       player.currentIndexStream,
       player.sequenceStateStream,
-      (a, b, c, d) => AudioPlayerStreams(a, b, c, d));
+      player.playerStateStream,
+      (a, b, c, d, e) => AudioPlayerStreams(
+            a,
+            b,
+            c,
+            d,
+            e,
+          ));
 
   @override
   void dispose() {
@@ -147,11 +154,12 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
                                 stream: _positionDataStream,
                                 builder: (context, snapshot) {
                                   final positionData = snapshot.data;
+                                  var percent =
+                                      (positionData!.position.inMilliseconds /
+                                          positionData.duration.inMilliseconds);
                                   return LinearPercentIndicator(
                                     padding: EdgeInsets.zero,
-                                    percent: (positionData!
-                                            .position.inMilliseconds /
-                                        positionData.duration.inMilliseconds),
+                                    percent: percent > 1 ? 1 : percent,
                                     lineHeight: 2,
                                     progressColor:
                                         Theme.of(context).colorScheme.primary,
@@ -186,7 +194,7 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
                                 crossFadeState: isPlaying
                                     ? CrossFadeState.showSecond
                                     : CrossFadeState.showFirst,
-                                duration: Duration(milliseconds: 300),
+                                duration: const Duration(milliseconds: 300),
                               ),
                             );
                           },
@@ -425,6 +433,7 @@ class AudioPlayerStreams {
   final bool shuffling;
   int? currentIndex;
   SequenceState? sequence;
-  AudioPlayerStreams(
-      this.loopMode, this.shuffling, this.currentIndex, this.sequence);
+  PlayerState? playerState;
+  AudioPlayerStreams(this.loopMode, this.shuffling, this.currentIndex,
+      this.sequence, this.playerState);
 }

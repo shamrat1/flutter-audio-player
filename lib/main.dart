@@ -88,104 +88,111 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            onPressed: _getAudioQuery,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => SingleAudioScreen(
-                audioUrls: songs,
-                shuffle: true,
-              ),
+    return WillPopScope(
+      onWillPop: () async {
+        var state = Provider.of<OverlayHandlerProvider>(context, listen: false);
+        if (state.overlayEntry != null && !state.inPipMode) {
+          state.enablePip(16 / 9);
+          return Future.value(false);
+        }
+        return Future.value(true);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+          actions: [
+            IconButton(
+              onPressed: _getAudioQuery,
+              icon: const Icon(Icons.refresh_rounded),
             ),
-          );
-        },
-        child: const Icon(Icons.shuffle_rounded),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: songs.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(
-                    songs[index].title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge!
-                        .copyWith(fontSize: 17),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    formatDuration((songs[index].duration ?? 0) ~/ 1000),
-                  ),
-                  leading: Hero(
-                    tag: songs[index].data,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.play_arrow_rounded,
-                        color: Theme.of(context).colorScheme.background,
-                        size: 35,
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            OverlayService().addAudioTitleOverlay(
+                context,
+                SingleAudioScreen(
+                  audioUrls: songs,
+                  shuffle: true,
+                ));
+          },
+          child: const Icon(Icons.shuffle_rounded),
+        ),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                itemCount: songs.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(
+                      songs[index].title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge!
+                          .copyWith(fontSize: 17),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      formatDuration((songs[index].duration ?? 0) ~/ 1000),
+                    ),
+                    leading: Hero(
+                      tag: songs[index].data,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.play_arrow_rounded,
+                          color: Theme.of(context).colorScheme.background,
+                          size: 35,
+                        ),
                       ),
                     ),
-                  ),
-                  trailing: PopupMenuButton(
-                    onSelected: (value) {
-                      print(value);
+                    trailing: PopupMenuButton(
+                      onSelected: (value) {
+                        print(value);
+                      },
+                      itemBuilder: (context) {
+                        return const [
+                          PopupMenuItem(
+                            value: 1,
+                            child: Text("Share"),
+                          ),
+                          PopupMenuItem(
+                            value: 2,
+                            child: Text("Delete"),
+                          ),
+                          PopupMenuItem(
+                            value: 3,
+                            child: Text("Delete"),
+                          ),
+                        ];
+                      },
+                    ),
+                    onTap: () {
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (ctx) => SingleAudioScreen(
+                      //       audioUrls: [songs[index]],
+                      //     ),
+                      //   ),
+                      // );
+                      OverlayService().addAudioTitleOverlay(
+                          context,
+                          SingleAudioScreen(
+                            audioUrls: [songs[index]],
+                          ));
                     },
-                    itemBuilder: (context) {
-                      return const [
-                        PopupMenuItem(
-                          value: 1,
-                          child: Text("Share"),
-                        ),
-                        PopupMenuItem(
-                          value: 2,
-                          child: Text("Delete"),
-                        ),
-                        PopupMenuItem(
-                          value: 3,
-                          child: Text("Delete"),
-                        ),
-                      ];
-                    },
-                  ),
-                  onTap: () {
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(
-                    //     builder: (ctx) => SingleAudioScreen(
-                    //       audioUrls: [songs[index]],
-                    //     ),
-                    //   ),
-                    // );
-                    OverlayService().addAudioTitleOverlay(
-                        context,
-                        SingleAudioScreen(
-                          audioUrls: [songs[index]],
-                        ));
-                  },
-                );
-              },
-            ),
+                  );
+                },
+              ),
+      ),
     );
   }
 
