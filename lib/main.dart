@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/audio_screen.dart';
 import 'package:audio_test/color_schemes.dart';
+import 'package:audio_test/constants.dart';
 import 'package:audio_test/overlay_handler.dart';
 import 'package:audio_test/overlay_service.dart';
+import 'package:audio_test/playlist_files_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
@@ -47,14 +49,35 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   bool _loading = true;
+  bool _playlisLoading = true;
   List<SongModel> songs = [];
+  List<PlaylistModel> playlists = [];
+  late TabController _tabController;
+  int currentIndex = 0;
+  TextEditingController nameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     requestPermission();
+    _tabController.addListener(tabChange);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _tabController.removeListener(tabChange);
+    _tabController.dispose();
+  }
+
+  void tabChange() {
+    setState(() {
+      currentIndex = _tabController.index;
+    });
   }
 
   Future<void> requestPermission() async {
@@ -65,9 +88,10 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     _getAudioQuery();
+    _getPlaylists();
   }
 
-  void _getAudioQuery() async {
+  Future<void> _getAudioQuery() async {
     if (!_loading) {
       setState(() {
         _loading = true;
@@ -83,6 +107,20 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       songs = audios;
       _loading = false;
+    });
+  }
+
+  Future<void> _getPlaylists() async {
+    if (!_playlisLoading) {
+      setState(() {
+        _playlisLoading = true;
+      });
+    }
+    var myplaylists = await OnAudioQuery().queryPlaylists();
+
+    setState(() {
+      playlists = myplaylists;
+      _playlisLoading = false;
     });
   }
 
@@ -106,111 +144,176 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.refresh_rounded),
             ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: "All Tracks"),
+              Tab(text: "Playlists"),
+            ],
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            OverlayService().addAudioTitleOverlay(
+            if (currentIndex == 0) {
+              OverlayService().addAudioTitleOverlay(
                 context,
                 SingleAudioScreen(
                   audioUrls: songs,
                   shuffle: true,
-                ));
+                ),
+              );
+            } else {
+              Constants.showBottomSheet(context, [
+                const Text(
+                  'Create a Playlist',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20.0,
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    label: const Text("Name of The Playlist"),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      _playlisLoading = true;
+                    });
+                    await OnAudioQuery().createPlaylist(nameController.text);
+                    await _getPlaylists();
+                    nameController.clear();
+                    setState(() {
+                      _playlisLoading = false;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 5,
+                      horizontal: MediaQuery.of(context).size.width * 0.30,
+                    ),
+                    child: const Text('Save'),
+                  ),
+                ),
+              ]);
+            }
           },
-          child: const Icon(Icons.shuffle_rounded),
+          child: AnimatedCrossFade(
+            firstChild: const Icon(Icons.shuffle_rounded),
+            secondChild: const Icon(Icons.playlist_add_rounded),
+            crossFadeState: currentIndex == 0
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            duration: const Duration(milliseconds: 400),
+          ),
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: songs.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(
-                      songs[index].title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge!
-                          .copyWith(fontSize: 17),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      formatDuration((songs[index].duration ?? 0) ~/ 1000),
-                    ),
-                    leading: Hero(
-                      tag: songs[index].data,
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.play_arrow_rounded,
-                          color: Theme.of(context).colorScheme.background,
-                          size: 35,
-                        ),
-                      ),
-                    ),
-                    trailing: PopupMenuButton(
-                      onSelected: (value) {
-                        print(value);
-                      },
-                      itemBuilder: (context) {
-                        return const [
-                          PopupMenuItem(
-                            value: 1,
-                            child: Text("Share"),
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  RefreshIndicator(
+                    onRefresh: () => _getAudioQuery(),
+                    child: ListView.builder(
+                      itemCount: songs.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(
+                            songs[index].title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge!
+                                .copyWith(fontSize: 17),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          PopupMenuItem(
-                            value: 2,
-                            child: Text("Delete"),
+                          subtitle: Text(
+                            Constants.formatDuration(
+                                (songs[index].duration ?? 0) ~/ 1000),
                           ),
-                          PopupMenuItem(
-                            value: 3,
-                            child: Text("Delete"),
+                          leading: Hero(
+                            tag: songs[index].data,
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              alignment: Alignment.center,
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                color: Theme.of(context).colorScheme.background,
+                                size: 35,
+                              ),
+                            ),
                           ),
-                        ];
+                          trailing: Constants.popupMenuForSongs(
+                              context, playlists, songs[index]),
+                          onTap: () {
+                            OverlayService().addAudioTitleOverlay(
+                                context,
+                                SingleAudioScreen(
+                                  audioUrls: [songs[index]],
+                                ));
+                          },
+                        );
                       },
                     ),
-                    onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (ctx) => SingleAudioScreen(
-                      //       audioUrls: [songs[index]],
-                      //     ),
-                      //   ),
-                      // );
-                      OverlayService().addAudioTitleOverlay(
-                          context,
-                          SingleAudioScreen(
-                            audioUrls: [songs[index]],
-                          ));
-                    },
-                  );
-                },
+                  ),
+                  RefreshIndicator(
+                    onRefresh: () => _getPlaylists(),
+                    child: ListView.builder(
+                      itemCount: playlists.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(playlists[index].playlist),
+                          subtitle:
+                              Text("${playlists[index].numOfSongs} Tracks"),
+                          leading: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.playlist_play_rounded,
+                              color: Theme.of(context).colorScheme.background,
+                              size: 35,
+                            ),
+                          ),
+                          trailing: Constants.popupMenuForPlaylists(
+                              context,
+                              playlists[index],
+                              TextEditingController(
+                                  text: playlists[index].playlist)),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PlaylistFiles(
+                                  playlist: playlists[index],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
       ),
     );
-  }
-
-  String formatDuration(int seconds) {
-    int hours = seconds ~/ 3600;
-    int minutes = (seconds % 3600) ~/ 60;
-    int remainingSeconds = seconds % 60;
-
-    String hoursString = (hours < 10) ? '0$hours' : hours.toString();
-    String minutesString = (minutes < 10) ? '0$minutes' : minutes.toString();
-    String secondsString = (remainingSeconds < 10)
-        ? '0$remainingSeconds'
-        : remainingSeconds.toString();
-
-    if (hours == 0 || hours < 0) {
-      return '$minutesString:$secondsString';
-    }
-
-    return '$hoursString:$minutesString:$secondsString';
   }
 }

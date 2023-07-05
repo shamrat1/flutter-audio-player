@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'overlay_handler.dart';
 
 class AudioTitleOverlayWidget extends StatefulWidget {
-  final Function onClear;
+  final VoidCallback onClear;
   final Widget widget;
 
   const AudioTitleOverlayWidget(
@@ -45,7 +45,6 @@ class _AudioTitleOverlayWidgetState extends State<AudioTitleOverlayWidget> {
     double aspectRatio =
         Provider.of<OverlayHandlerProvider>(context, listen: false).aspectRatio;
 
-    print("true   $aspectRatio");
 //    Provider.of<OverlayHandlerProvider>(context, listen: false).enablePip();
     Future.delayed(const Duration(milliseconds: 100), () {
       print("true   Future.microtask");
@@ -86,11 +85,27 @@ class _AudioTitleOverlayWidgetState extends State<AudioTitleOverlayWidget> {
         top: offset.dy,
         child: Material(
           elevation: isInPipMode ? 5.0 : 0.0,
-          child: AnimatedContainer(
-            height: height,
-            width: width,
-            child: widget.widget,
-            duration: const Duration(milliseconds: 250),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedContainer(
+                height: height,
+                width: width,
+                child: widget.widget,
+                duration: const Duration(milliseconds: 250),
+              ),
+              Positioned(
+                top: -20,
+                right: -20,
+                child: IconButton(
+                  onPressed: widget.onClear,
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              )
+            ],
           ),
         ),
       );
