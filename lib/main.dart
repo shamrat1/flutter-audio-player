@@ -8,6 +8,7 @@ import 'package:audio_test/overlay_handler.dart';
 import 'package:audio_test/overlay_service.dart';
 import 'package:audio_test/playlist_files_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -58,7 +59,7 @@ class _MyHomePageState extends State<MyHomePage>
   late TabController _tabController;
   int currentIndex = 0;
   TextEditingController nameController = TextEditingController();
-
+  DateTime? currentBackPressTime;
   @override
   void initState() {
     super.initState();
@@ -133,16 +134,45 @@ class _MyHomePageState extends State<MyHomePage>
           state.enablePip(16 / 9);
           return Future.value(false);
         }
+        DateTime now = DateTime.now();
+        if (currentBackPressTime == null ||
+            now.difference(currentBackPressTime ?? now) >
+                const Duration(seconds: 2)) {
+          currentBackPressTime = now;
+          Fluttertoast.showToast(
+              msg: "Press back again to push app into backgroud mode.");
+          return Future.value(false);
+        }
         return Future.value(true);
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
           actions: [
-            IconButton(
-              onPressed: _getAudioQuery,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
+            PopupMenuButton(
+              onSelected: (val) {
+                if (val == 1) {
+                  _getAudioQuery();
+                  _getPlaylists();
+                }
+              },
+              itemBuilder: (context) {
+                return [
+                  const PopupMenuItem(
+                    value: 1,
+                    child: Text("Refresh"),
+                  ),
+                  const PopupMenuItem(
+                    value: 2,
+                    child: Text("Share"),
+                  ),
+                  const PopupMenuItem(
+                    value: 3,
+                    child: Text("About"),
+                  ),
+                ];
+              },
+            )
           ],
           bottom: TabBar(
             controller: _tabController,

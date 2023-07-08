@@ -47,16 +47,12 @@ class _AudioTitleOverlayWidgetState extends State<AudioTitleOverlayWidget> {
 
 //    Provider.of<OverlayHandlerProvider>(context, listen: false).enablePip();
     Future.delayed(const Duration(milliseconds: 100), () {
-      print("true   Future.microtask");
-
       setState(() {
         isInPipMode = true;
         width = (oldWidth ?? 0) - 32.0;
         height = Constants.VIDEO_TITLE_HEIGHT_PIP;
-        print((oldHeight ?? 0) - (height ?? 0) - Constants.BOTTOM_PADDING_PIP);
         offset = Offset(16,
             (oldHeight ?? 0) - (height ?? 0) - Constants.BOTTOM_PADDING_PIP);
-//        height = (Constants.VIDEO_HEIGHT_PIP/aspectRatio) + 33;
       });
     });
   }
@@ -69,7 +65,6 @@ class _AudioTitleOverlayWidgetState extends State<AudioTitleOverlayWidget> {
     }
     return Consumer<OverlayHandlerProvider>(
         builder: (context, overlayProvider, _) {
-      print("video_overlay_widget ${overlayProvider.inPipMode}");
       if (overlayProvider.inPipMode != isInPipMode) {
         isInPipMode = overlayProvider.inPipMode;
         if (isInPipMode) {
@@ -78,34 +73,19 @@ class _AudioTitleOverlayWidgetState extends State<AudioTitleOverlayWidget> {
           _onExitPipMode();
         }
       }
-      print(height);
       return AnimatedPositioned(
         duration: const Duration(milliseconds: 150),
         left: offset.dx,
         top: offset.dy,
         child: Material(
-          elevation: isInPipMode ? 5.0 : 0.0,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              AnimatedContainer(
-                height: height,
-                width: width,
-                child: widget.widget,
-                duration: const Duration(milliseconds: 250),
-              ),
-              Positioned(
-                top: -20,
-                right: -20,
-                child: IconButton(
-                  onPressed: widget.onClear,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              )
-            ],
+          elevation: isInPipMode ? 3.0 : 0.0,
+          borderRadius: BorderRadius.circular(15),
+          shadowColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          child: AnimatedContainer(
+            height: height,
+            width: width,
+            child: widget.widget,
+            duration: const Duration(milliseconds: 250),
           ),
         ),
       );

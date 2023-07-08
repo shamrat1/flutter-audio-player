@@ -76,21 +76,33 @@ class _PlaylistFilesState extends State<PlaylistFiles> {
               ),
             ),
             trailing: PopupMenuButton(
-              onSelected: (value) {},
+              onSelected: (value) async {
+                if (value == 2) {
+                  setState(() {
+                    _loading = true;
+                  });
+                  await OnAudioQuery()
+                      .removeFromPlaylist(widget.playlist.id, songs[i].id);
+                  _getAudioQuery();
+                  setState(() {
+                    _loading = false;
+                  });
+                }
+              },
               itemBuilder: (context) {
-                return const [
-                  PopupMenuItem(
+                return [
+                  const PopupMenuItem(
                     value: 1,
                     child: Text("Share"),
                   ),
                   PopupMenuItem(
                     value: 2,
-                    child: Text("Delete"),
+                    child: Text(
+                      "Remove from ${widget.playlist.playlist}",
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  // PopupMenuItem(
-                  //   value: 3,
-                  //   child: Text("Add To Playlist"),
-                  // ),
                 ];
               },
             ),

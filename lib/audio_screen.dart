@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/constants.dart';
 import 'package:audio_test/overlay_handler.dart';
+import 'package:audio_test/rotating_music_note_icon.dart';
 import 'package:audio_test/seekbar.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_session/audio_session.dart';
@@ -90,180 +91,179 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
   Widget build(BuildContext context) {
     return Consumer<OverlayHandlerProvider>(
         builder: (context, overlayProvider, _) {
-      return Scaffold(
-        appBar: overlayProvider.inPipMode
-            ? null
-            : AppBar(elevation: 0, actions: [
-                IconButton(
-                  onPressed: () => overlayProvider.enablePip(16 / 9),
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                ),
-              ]),
-        body: StreamBuilder<AudioPlayerStreams>(
-            stream: _playerStream,
-            builder: (context, playerSnapshot) {
-              // player.sequenceStateStream
-
-              var playerData = playerSnapshot.data;
-              if (overlayProvider.inPipMode) {
-                return InkWell(
-                  onTap: () => overlayProvider.disablePip(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      // mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Hero(
-                          tag: widget
-                              .audioUrls[playerData?.currentIndex ?? 0].data,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            margin: const EdgeInsets.only(right: 16),
-                            width: Constants.VIDEO_TITLE_HEIGHT_PIP - 10,
-                            height: Constants.VIDEO_TITLE_HEIGHT_PIP - 10,
-                            // margin: const EdgeInsets.symmetric(
-                            //     horizontal: 8, vertical: 8),
-                            alignment: Alignment.center,
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              size: 40,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: (MediaQuery.of(context).size.width -
-                                  Constants.VIDEO_TITLE_HEIGHT_PIP -
-                                  10 -
-                                  16) *
-                              0.70,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                widget.audioUrls[playerData?.currentIndex ?? 0]
-                                    .title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(fontSize: 14),
-                                maxLines: 2,
-                              ),
-                              const SizedBox(
-                                height: 8,
-                              ),
-                              StreamBuilder<PositionData>(
-                                stream: _positionDataStream,
-                                builder: (context, snapshot) {
-                                  final positionData = snapshot.data;
-                                  var percent =
-                                      (positionData!.position.inMilliseconds /
-                                          positionData.duration.inMilliseconds);
-                                  return LinearPercentIndicator(
-                                    padding: EdgeInsets.zero,
-                                    percent: percent > 1 ? 1 : percent,
-                                    lineHeight: 2,
-                                    progressColor:
-                                        Theme.of(context).colorScheme.primary,
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        StreamBuilder<bool>(
-                          stream: player.playingStream,
-                          builder: (context, playingSnapshot) {
-                            var isPlaying = (playingSnapshot.data ?? false);
-                            var myIconSize = 47.0;
-                            return GestureDetector(
-                              onTap: () {
-                                if (isPlaying) {
-                                  player.pause();
-                                } else {
-                                  player.play();
-                                }
-                              },
-                              child: AnimatedCrossFade(
-                                firstChild: Icon(
-                                  Icons.play_arrow_rounded,
-                                  size: myIconSize,
-                                ),
-                                secondChild: Icon(
-                                  Icons.pause_rounded,
-                                  size: myIconSize,
-                                ),
-                                crossFadeState: isPlaying
-                                    ? CrossFadeState.showSecond
-                                    : CrossFadeState.showFirst,
-                                duration: const Duration(milliseconds: 300),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Scaffold(
+          appBar: overlayProvider.inPipMode
+              ? null
+              : AppBar(elevation: 0, actions: [
+                  IconButton(
+                    onPressed: () => overlayProvider.enablePip(16 / 9),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
                   ),
-                );
-              }
-              return SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Hero(
-                      tag: widget.audioUrls[playerData?.currentIndex ?? 0].data,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        width: double.infinity,
-                        height: MediaQuery.sizeOf(context).height * 0.35,
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.music_note_rounded,
-                          size: 250,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
+                ]),
+          body: StreamBuilder<AudioPlayerStreams>(
+              stream: _playerStream,
+              builder: (context, playerSnapshot) {
+                // player.sequenceStateStream
+
+                var playerData = playerSnapshot.data;
+                if (overlayProvider.inPipMode) {
+                  return InkWell(
+                    onTap: () => overlayProvider.disablePip(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        // mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Hero(
+                            tag: widget
+                                .audioUrls[playerData?.currentIndex ?? 0].data,
+                            child: RotatingMusicNoteIcon(
+                              isPlaying:
+                                  playerData?.playerState?.playing ?? false,
+                              height: Constants.VIDEO_TITLE_HEIGHT_PIP - 30,
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 8,
+                          ),
+                          SizedBox(
+                            width: (MediaQuery.of(context).size.width -
+                                    Constants.VIDEO_TITLE_HEIGHT_PIP -
+                                    10 -
+                                    16) *
+                                0.60,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  widget
+                                      .audioUrls[playerData?.currentIndex ?? 0]
+                                      .title,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium!
+                                      .copyWith(fontSize: 14),
+                                  maxLines: 2,
+                                ),
+                                const SizedBox(
+                                  height: 8,
+                                ),
+                                StreamBuilder<PositionData>(
+                                  stream: _positionDataStream,
+                                  builder: (context, snapshot) {
+                                    final positionData = snapshot.data;
+                                    if (positionData == null) {
+                                      return Container();
+                                    }
+                                    var percent = (positionData
+                                            .position.inMilliseconds /
+                                        positionData.duration.inMilliseconds);
+                                    return LinearPercentIndicator(
+                                      padding: EdgeInsets.zero,
+                                      percent: percent > 1 ? 1 : percent,
+                                      lineHeight: 2,
+                                      progressColor:
+                                          Theme.of(context).colorScheme.primary,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          StreamBuilder<bool>(
+                            stream: player.playingStream,
+                            builder: (context, playingSnapshot) {
+                              var isPlaying = (playingSnapshot.data ?? false);
+                              var myIconSize = 47.0;
+                              return GestureDetector(
+                                onTap: () {
+                                  if (isPlaying) {
+                                    player.pause();
+                                  } else {
+                                    player.play();
+                                  }
+                                },
+                                child: AnimatedCrossFade(
+                                  firstChild: Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: myIconSize,
+                                  ),
+                                  secondChild: Icon(
+                                    Icons.pause_rounded,
+                                    size: myIconSize,
+                                  ),
+                                  crossFadeState: isPlaying
+                                      ? CrossFadeState.showSecond
+                                      : CrossFadeState.showFirst,
+                                  duration: const Duration(milliseconds: 300),
+                                ),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )
+                        ],
                       ),
                     ),
+                  );
+                }
+                return SafeArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Hero(
+                          tag: widget
+                              .audioUrls[playerData?.currentIndex ?? 0].data,
+                          child: RotatingMusicNoteIcon(
+                            isPlaying:
+                                playerData?.playerState?.playing ?? false,
+                          ),
+                        ),
+                      ),
 
-                    Text(
-                      widget.audioUrls[playerData?.currentIndex ?? 0].title,
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                    Text(
-                      widget.audioUrls[playerData?.currentIndex ?? 0].artist ??
-                          "N/A",
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                      Text(
+                        widget.audioUrls[playerData?.currentIndex ?? 0].title,
+                        style: Theme.of(context).textTheme.headlineLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        widget.audioUrls[playerData?.currentIndex ?? 0]
+                                .artist ??
+                            "N/A",
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
 
-                    // Display play/pause button and volume/speed sliders.
-                    ControlButtons(player),
-                    StreamBuilder<PositionData>(
-                      stream: _positionDataStream,
-                      builder: (context, snapshot) {
-                        final positionData = snapshot.data;
-                        return SeekBar(
-                          duration: positionData?.duration ?? Duration.zero,
-                          position: positionData?.position ?? Duration.zero,
-                          bufferedPosition:
-                              positionData?.bufferedPosition ?? Duration.zero,
-                          onChangeEnd: player.seek,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
-            }),
+                      // Display play/pause button and volume/speed sliders.
+                      ControlButtons(player),
+                      StreamBuilder<PositionData>(
+                        stream: _positionDataStream,
+                        builder: (context, snapshot) {
+                          final positionData = snapshot.data;
+                          return SeekBar(
+                            duration: positionData?.duration ?? Duration.zero,
+                            position: positionData?.position ?? Duration.zero,
+                            bufferedPosition:
+                                positionData?.bufferedPosition ?? Duration.zero,
+                            onChangeEnd: player.seek,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }),
+        ),
       );
     });
   }
