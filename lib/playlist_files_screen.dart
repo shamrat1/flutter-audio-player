@@ -1,6 +1,8 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:audio_test/audio_screen.dart';
 import 'package:audio_test/constants.dart';
 import 'package:audio_test/overlay_service.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
@@ -40,7 +42,40 @@ class _PlaylistFilesState extends State<PlaylistFiles> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.playlist.playlist),
+        title: AnimatedTextKit(
+          totalRepeatCount: 1,
+          animatedTexts: [
+            TypewriterAnimatedText(
+              widget.playlist.playlist,
+              textStyle: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+              ),
+              speed: const Duration(milliseconds: 150),
+            ),
+          ],
+        ),
+        actions: songs.isNotEmpty
+            ? [
+                IconButton(
+                  onPressed: () => OverlayService().addAudioTitleOverlay(
+                      context,
+                      SingleAudioScreen(
+                        audioUrls: songs,
+                      )),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                ),
+                IconButton(
+                  onPressed: () => OverlayService().addAudioTitleOverlay(
+                      context,
+                      SingleAudioScreen(
+                        audioUrls: songs,
+                        shuffle: true,
+                      )),
+                  icon: const Icon(CupertinoIcons.shuffle),
+                ),
+              ]
+            : null,
       ),
       body: ListView.builder(
         itemCount: songs.length,
@@ -111,6 +146,7 @@ class _PlaylistFilesState extends State<PlaylistFiles> {
                   context,
                   SingleAudioScreen(
                     audioUrls: songs,
+                    index: i,
                   ));
             },
           );

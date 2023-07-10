@@ -26,6 +26,8 @@ dependencies:
   percent_indicator: ^4.2.3
   just_audio_background: ^0.0.1-beta.10
   fluttertoast: ^8.2.2
+  shared_preferences: ^2.2.0
+  animated_text_kit: ^4.2.2
 
 dev_dependencies:
   flutter_test:

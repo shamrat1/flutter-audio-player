@@ -100,9 +100,19 @@ class SeekBarState extends State<SeekBar> {
           bottom: 0.0,
           child: Text(
               RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$')
-                      .firstMatch("$_remaining")
+                      .firstMatch("${widget.duration}")
                       ?.group(1) ??
-                  '$_remaining',
+                  '${widget.duration}',
+              style: Theme.of(context).textTheme.bodySmall),
+        ),
+        Positioned(
+          left: 16.0,
+          bottom: 0.0,
+          child: Text(
+              (RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$')
+                      .firstMatch("${widget.position}")
+                      ?.group(1) ??
+                  '${widget.position}'),
               style: Theme.of(context).textTheme.bodySmall),
         ),
       ],

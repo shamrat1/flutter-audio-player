@@ -1,12 +1,13 @@
 import 'dart:io';
 
-import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/audio_screen.dart';
 import 'package:audio_test/color_schemes.dart';
 import 'package:audio_test/constants.dart';
 import 'package:audio_test/overlay_handler.dart';
 import 'package:audio_test/overlay_service.dart';
+import 'package:audio_test/played_till_state.dart';
 import 'package:audio_test/playlist_files_screen.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -20,7 +21,14 @@ void main() async {
     androidNotificationChannelName: 'Audio playback',
     androidNotificationOngoing: true,
   );
-  runApp(const MyApp());
+  runApp(MultiProvider(providers: [
+    ChangeNotifierProvider<OverlayHandlerProvider>(
+      create: (_) => OverlayHandlerProvider(),
+    ),
+    ChangeNotifierProvider<PlayedTillProvider>(
+      create: (_) => PlayedTillProvider(),
+    ),
+  ], child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -29,14 +37,11 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<OverlayHandlerProvider>(
-      create: (_) => OverlayHandlerProvider(),
-      child: MaterialApp(
-        title: 'Simple Audio Player',
-        theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
-        darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
-        home: const MyHomePage(title: 'Simple Audio Player'),
-      ),
+    return MaterialApp(
+      title: 'Simple Audio Player',
+      theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+      darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
+      home: const MyHomePage(title: 'Simple Audio Player'),
     );
   }
 }
@@ -237,7 +242,7 @@ class _MyHomePageState extends State<MyHomePage>
             }
           },
           child: AnimatedCrossFade(
-            firstChild: const Icon(Icons.shuffle_rounded),
+            firstChild: const Icon(CupertinoIcons.shuffle),
             secondChild: const Icon(Icons.playlist_add_rounded),
             crossFadeState: currentIndex == 0
                 ? CrossFadeState.showFirst
@@ -292,7 +297,8 @@ class _MyHomePageState extends State<MyHomePage>
                             OverlayService().addAudioTitleOverlay(
                                 context,
                                 SingleAudioScreen(
-                                  audioUrls: [songs[index]],
+                                  audioUrls: songs,
+                                  index: index,
                                 ));
                           },
                         );

@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:audio_test/audio_file.dart';
 import 'package:audio_test/constants.dart';
 import 'package:audio_test/overlay_handler.dart';
+import 'package:audio_test/played_till_state.dart';
 import 'package:audio_test/rotating_music_note_icon.dart';
 import 'package:audio_test/seekbar.dart';
 import 'package:flutter/material.dart';
@@ -13,21 +13,28 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SingleAudioScreen extends StatefulWidget {
-  SingleAudioScreen({Key? key, required this.audioUrls, this.shuffle = false})
+  SingleAudioScreen(
+      {Key? key, required this.audioUrls, this.shuffle = false, this.index})
       : super(key: key);
   final List<SongModel> audioUrls;
   final bool shuffle;
+  final int? index;
   @override
   State<SingleAudioScreen> createState() => _SingleAudioScreenState();
 }
 
 class _SingleAudioScreenState extends State<SingleAudioScreen> {
   final player = AudioPlayer();
+  late PlayedTillProvider provider;
+
   @override
   void initState() {
     super.initState();
+    provider = context.read<PlayedTillProvider>();
+    provider.init();
     _init();
   }
 
@@ -35,8 +42,13 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.speech());
     // Listen to errors during playback.
-    player.playbackEventStream.listen((event) {},
-        onError: (Object e, StackTrace stackTrace) {
+    player.playbackEventStream.listen((event) {
+      if (event.processingState == ProcessingState.completed) {
+        // delete songs from last played till list
+        provider.remove(widget.audioUrls[event.currentIndex ?? 0].id);
+        print("YAHOOOOOOOOOOOOOOOOOOOO< completed");
+      }
+    }, onError: (Object e, StackTrace stackTrace) {
       print('A stream error occurred: $e');
     });
     // Try to load audio from a source and catch any errors.
@@ -44,14 +56,21 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
       final playlist = ConcatenatingAudioSource(
           children: widget.audioUrls
               .map((e) => AudioSource.file(e.data,
-                  tag: MediaItem(id: e.data, title: e.title, artist: e.artist)))
+                  tag: MediaItem(
+                      id: e.id.toString(), title: e.title, artist: e.artist)))
               .toList());
-      var index = 0;
+      var index = widget.index ?? 0;
       if (widget.shuffle) {
         index = Random().nextInt(playlist.length);
       }
       await player.setAudioSource(playlist, initialIndex: index);
       await player.setShuffleModeEnabled(widget.shuffle);
+      var songPlayedTillIndex = provider.exists(widget.audioUrls[index].id);
+      print("song played till $songPlayedTillIndex");
+      if (songPlayedTillIndex != -1) {
+        await player.seek(provider.getDuration(songPlayedTillIndex));
+      }
+
       await player.play();
     } catch (e) {
       print("Error loading audio source: $e");
@@ -82,8 +101,11 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
           ));
 
   @override
-  void dispose() {
+  void dispose() async {
     super.dispose();
+    var song = widget.audioUrls[player.currentIndex ?? 0];
+    print("${song.id} && ${player.position.inSeconds}");
+    provider.addOrEdit(song.id, player.position.inSeconds);
     player.dispose();
   }
 
@@ -204,7 +226,9 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
                             },
                           ),
                           IconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              overlayProvider.removeOverlay(context);
+                            },
                             icon: Icon(
                               Icons.close_rounded,
                               color: Theme.of(context).colorScheme.primary,
@@ -232,10 +256,15 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
                         ),
                       ),
 
-                      Text(
-                        widget.audioUrls[playerData?.currentIndex ?? 0].title,
-                        style: Theme.of(context).textTheme.headlineLarge,
-                        textAlign: TextAlign.center,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          widget.audioUrls[playerData?.currentIndex ?? 0].title,
+                          style: Theme.of(context).textTheme.headlineLarge,
+                          textAlign: TextAlign.center,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       Text(
                         widget.audioUrls[playerData?.currentIndex ?? 0]
