@@ -46,7 +46,6 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
       if (event.processingState == ProcessingState.completed) {
         // delete songs from last played till list
         provider.remove(widget.audioUrls[event.currentIndex ?? 0].id);
-        print("YAHOOOOOOOOOOOOOOOOOOOO< completed");
       }
     }, onError: (Object e, StackTrace stackTrace) {
       print('A stream error occurred: $e');
@@ -66,7 +65,6 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
       await player.setAudioSource(playlist, initialIndex: index);
       await player.setShuffleModeEnabled(widget.shuffle);
       var songPlayedTillIndex = provider.exists(widget.audioUrls[index].id);
-      print("song played till $songPlayedTillIndex");
       if (songPlayedTillIndex != -1) {
         await player.seek(provider.getDuration(songPlayedTillIndex));
       }
@@ -104,7 +102,6 @@ class _SingleAudioScreenState extends State<SingleAudioScreen> {
   void dispose() async {
     super.dispose();
     var song = widget.audioUrls[player.currentIndex ?? 0];
-    print("${song.id} && ${player.position.inSeconds}");
     provider.addOrEdit(song.id, player.position.inSeconds);
     player.dispose();
   }

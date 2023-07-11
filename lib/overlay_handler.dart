@@ -8,13 +8,11 @@ class OverlayHandlerProvider with ChangeNotifier {
   enablePip(double aspect) {
     inPipMode = true;
     _aspectRatio = aspect;
-    print("$inPipMode enablePip");
     notifyListeners();
   }
 
   disablePip() {
     inPipMode = false;
-    print("$inPipMode disablePip");
     notifyListeners();
   }
 
